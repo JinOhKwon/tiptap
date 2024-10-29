@@ -1,22 +1,13 @@
 import type { MentionOptions } from '@tiptap/extension-mention';
 import { ReactRenderer } from '@tiptap/react';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
-import SuggestionList, { type SuggestionListRef } from './SuggestionList';
+import SuggestionList, { type SuggestionListRef } from './';
 
 export type MentionSuggestion = {
   id: string;
   mentionLabel: string;
 };
 
-/**
- * Workaround for the current typing incompatibility between Tippy.js and Tiptap
- * Suggestion utility.
- *
- * @see https://github.com/ueberdosis/tiptap/issues/2795#issuecomment-1160623792
- *
- * Adopted from
- * https://github.com/Doist/typist/blob/a1726a6be089e3e1452def641dfcfc622ac3e942/stories/typist-editor/constants/suggestions.ts#L169-L186
- */
 const DOM_RECT_FALLBACK: DOMRect = {
   bottom: 0,
   height: 0,
@@ -32,10 +23,6 @@ const DOM_RECT_FALLBACK: DOMRect = {
 };
 
 export const mentionSuggestionOptions: MentionOptions['suggestion'] = {
-  // Replace this `items` code with a call to your API that returns suggestions
-  // of whatever sort you like (including potentially additional data beyond
-  // just an ID and a label). It need not be async but is written that way for
-  // the sake of example.
   // eslint-disable-next-line require-await
   items: async ({ query }): Promise<Array<MentionSuggestion>> =>
     Promise.resolve(
@@ -67,13 +54,7 @@ export const mentionSuggestionOptions: MentionOptions['suggestion'] = {
         'Lisa Bonet',
         'Benicio Monserrate Rafael del Toro Sánchez',
       ]
-        // Typically we'd be getting this data from an API where we'd have a
-        // definitive "id" to use for each suggestion item, but for the sake of
-        // example, we'll just set the index within this hardcoded list as the
-        // ID of each item.
         .map((name, index) => ({ mentionLabel: name, id: index.toString() }))
-        // Find matching entries based on what the user has typed so far (after
-        // the @ symbol)
         .filter((item) => item.mentionLabel.toLowerCase().startsWith(query.toLowerCase()))
         .slice(0, 5),
     ),
@@ -125,11 +106,6 @@ export const mentionSuggestionOptions: MentionOptions['suggestion'] = {
         popup?.destroy();
         component?.destroy();
 
-        // Remove references to the old popup and component upon destruction/exit.
-        // (This should prevent redundant calls to `popup.destroy()`, which Tippy
-        // warns in the console is a sign of a memory leak, as the `suggestion`
-        // plugin seems to call `onExit` both when a suggestion menu is closed after
-        // a user chooses an option, *and* when the editor itself is destroyed.)
         popup = undefined;
         component = undefined;
       },

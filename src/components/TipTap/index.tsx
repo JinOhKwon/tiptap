@@ -28,10 +28,25 @@ import { Color } from '@tiptap/extension-color';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { TextAlign } from '@tiptap/extension-text-align';
+import classnames from 'classnames/bind';
+import styles from './TipTap.module.scss';
+import { History } from '@tiptap/extension-history';
+import { Bold } from '@tiptap/extension-bold';
+import { Code } from '@tiptap/extension-code';
+import Highlight from '@tiptap/extension-highlight';
+import { Italic } from '@tiptap/extension-italic';
+import Link from '@tiptap/extension-link';
+import { useCallback } from 'react';
+import { Strike } from '@tiptap/extension-strike';
+import Subscript from '@tiptap/extension-subscript';
+import Underline from '@tiptap/extension-underline';
+import Superscript from '@tiptap/extension-superscript';
+
+const cx = classnames.bind(styles);
 
 const limit = 6000;
 
-export default function TipTapBlockquote() {
+export default function TipTap() {
   const editor = useEditor({
     autofocus: true,
     extensions: [
@@ -49,6 +64,20 @@ export default function TipTapBlockquote() {
       TextStyle,
       Color,
       FontFamily,
+      History,
+      Bold,
+      Code,
+      Italic,
+      Strike,
+      Subscript,
+      Underline,
+      Superscript,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
+      }),
+      Highlight.configure({ multicolor: true }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -87,9 +116,29 @@ export default function TipTapBlockquote() {
     `,
   });
 
-  if (!editor) {
-    return null;
-  }
+  const setLink = useCallback(() => {
+    if (!editor) return null;
+
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    // cancelled
+    if (url === null) {
+      return;
+    }
+
+    // empty
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+
+      return;
+    }
+
+    // update link
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
+
+  if (!editor) return null;
 
   return (
     <Box
@@ -116,34 +165,34 @@ export default function TipTapBlockquote() {
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             className={editor.isActive('blockquote') ? 'is-active' : ''}
           >
-            blockquote(이미지) toggle
+            블록 인용(toggle)
           </button>
           <button
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={editor.isActive('bulletList') ? 'is-active' : ''}
           >
-            list(이미지) toggle
+            목록(toggle)
           </button>
           <button
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             className={editor.isActive('orderedList') ? 'is-active' : ''}
           >
-            Toggle ordered list
+            순서 목록(toggle)
           </button>
           <button
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             className={editor.isActive('codeBlock') ? 'is-active' : ''}
           >
-            code block toggle
+            코드 블록(toggle)
           </button>
           <button
             onClick={() => editor.chain().focus().toggleTaskList().run()}
             className={editor.isActive('taskList') ? 'is-active' : ''}
           >
-            task list toggle
+            작업 목록(toggle)
           </button>
-          <button onClick={() => editor.chain().focus().setHardBreak().run()}>enter toggle</button>
-          <button onClick={() => editor.chain().focus().setHorizontalRule().run()}>세로줄 추가</button>
+          <button onClick={() => editor.chain().focus().setHardBreak().run()}>줄 바꿈</button>
+          <button onClick={() => editor.chain().focus().setHorizontalRule().run()}>수평선 추가</button>
         </Box>
       </Box>
 
@@ -170,6 +219,57 @@ export default function TipTapBlockquote() {
           className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
         >
           H3
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={editor.isActive('bold') ? 'is-active' : ''}
+        >
+          굵게(toggle)
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          className={editor.isActive('code') ? 'is-active' : ''}
+        >
+          코드(toggle)
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          className={editor.isActive('highlight') ? 'is-active' : ''}
+        >
+          강조(toggle)
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={editor.isActive('italic') ? 'is-active' : ''}
+        >
+          기울임(toggle)
+        </button>
+        <button onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}>
+          링크 설정
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={editor.isActive('strike') ? 'is-active' : ''}
+        >
+          취소선(toggle)
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+          className={editor.isActive('subscript') ? 'is-active' : ''}
+        >
+          아래 첨자(toggle)
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          className={editor.isActive('superscript') ? 'is-active' : ''}
+        >
+          위 첨자(toggle)
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          className={editor.isActive('underline') ? 'is-active' : ''}
+        >
+          밑줄(toggle)
         </button>
       </Box>
 
@@ -269,11 +369,16 @@ export default function TipTapBlockquote() {
           Green
         </button>
         <button onClick={() => editor.chain().focus().unsetColor().run()} data-testid='unsetColor'>
-          Unset color
+          초기화
         </button>
       </Box>
 
-      <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+        }}
+      >
         <button
           onClick={() => editor.chain().focus().setFontFamily('Inter').run()}
           className={editor.isActive('textStyle', { fontFamily: 'Inter' }) ? 'is-active' : ''}
@@ -310,13 +415,6 @@ export default function TipTapBlockquote() {
           커시브
         </button>
         <button
-          onClick={() => editor.chain().focus().setFontFamily('var(--title-font-family)').run()}
-          className={editor.isActive('textStyle', { fontFamily: 'var(--title-font-family)' }) ? 'is-active' : ''}
-          data-test-id='css-variable'
-        >
-          CSS 변수
-        </button>
-        <button
           onClick={() => editor.chain().focus().setFontFamily('"Comic Sans MS", "Comic Sans"').run()}
           className={editor.isActive('textStyle', { fontFamily: '"Comic Sans"' }) ? 'is-active' : ''}
           data-test-id='comic-sans-quoted'
@@ -328,7 +426,12 @@ export default function TipTapBlockquote() {
         </button>
       </Box>
 
-      <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+        }}
+      >
         <button
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
           className={editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}
@@ -389,14 +492,7 @@ export default function TipTapBlockquote() {
         </FloatingMenu>
       )}
 
-      <Box
-        sx={{
-          border: '1px solid #ccc',
-          borderRadius: 4,
-        }}
-      >
-        <EditorContent editor={editor} />
-      </Box>
+      <EditorContent editor={editor} rows={10} className={cx('tiptap')} />
 
       <Box
         sx={{
