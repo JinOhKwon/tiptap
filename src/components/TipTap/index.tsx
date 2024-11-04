@@ -1,119 +1,43 @@
-import Blockquote from '@tiptap/extension-blockquote';
-import { Paragraph } from '@tiptap/extension-paragraph';
 import { EditorContent, FloatingMenu, useEditor } from '@tiptap/react';
-import Document from '@tiptap/extension-document';
-import Text from '@tiptap/extension-text';
 import { Box } from '@mui/material';
-import { BulletList } from '@tiptap/extension-bullet-list';
-import { ListItem } from '@tiptap/extension-list-item';
-import { CodeBlock } from '@tiptap/extension-code-block';
-import { HardBreak } from '@tiptap/extension-hard-break';
-import { Heading } from '@tiptap/extension-heading';
-import { HorizontalRule } from '@tiptap/extension-horizontal-rule';
-import { Image } from '@tiptap/extension-image';
-import { OrderedList } from '@tiptap/extension-ordered-list';
-import { Mention } from '@tiptap/extension-mention';
-import { mentionSuggestionOptions } from '@/components/MentionList/mentionSuggestionOptions';
-import { Dropcursor } from '@tiptap/extension-dropcursor';
-import { Table } from '@tiptap/extension-table';
-import { Gapcursor } from '@tiptap/extension-gapcursor';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TaskList } from '@tiptap/extension-task-list';
-import { TaskItem } from '@tiptap/extension-task-item';
-import { CharacterCount } from '@tiptap/extension-character-count';
-import { TextStyle } from '@tiptap/extension-text-style';
-import { Color } from '@tiptap/extension-color';
-import { FontFamily } from '@tiptap/extension-font-family';
-import { Placeholder } from '@tiptap/extension-placeholder';
-import { TextAlign } from '@tiptap/extension-text-align';
 import classnames from 'classnames/bind';
 import styles from './TipTap.module.scss';
-import { History } from '@tiptap/extension-history';
-import { Bold } from '@tiptap/extension-bold';
-import { Code } from '@tiptap/extension-code';
-import Highlight from '@tiptap/extension-highlight';
-import { Italic } from '@tiptap/extension-italic';
-import Link from '@tiptap/extension-link';
-import { useCallback } from 'react';
-import { Strike } from '@tiptap/extension-strike';
-import Subscript from '@tiptap/extension-subscript';
-import Underline from '@tiptap/extension-underline';
-import Superscript from '@tiptap/extension-superscript';
+import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
+import { getExtensions } from '@/components/TipTap/TiptapExtensios';
 
 const cx = classnames.bind(styles);
 
 const limit = 6000;
 
 export default function TipTap() {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [image, setImage] = useState<File | undefined>();
+
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise(function (resolve, reject) {
+      const fr = new FileReader();
+
+      fr.onload = function () {
+        resolve(fr.result as string);
+      };
+
+      fr.onerror = function () {
+        reject(fr);
+      };
+
+      fr.readAsDataURL(file);
+    });
+  };
+
+  const handleUpload = useCallback(async (file: File) => {
+    const result = await readFileAsDataURL(file);
+
+    return result;
+  }, []);
+
   const editor = useEditor({
     autofocus: true,
-    extensions: [
-      Document,
-      Text,
-      Paragraph,
-      Blockquote,
-      BulletList,
-      OrderedList,
-      ListItem,
-      CodeBlock,
-      HardBreak,
-      HorizontalRule,
-      Dropcursor,
-      TextStyle,
-      Color,
-      FontFamily,
-      History,
-      Bold,
-      Code,
-      Italic,
-      Strike,
-      Subscript,
-      Underline,
-      Superscript,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        defaultProtocol: 'https',
-      }),
-      Highlight.configure({ multicolor: true }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Placeholder.configure({
-        placeholder: '입력하세요~',
-      }),
-      Mention.configure({
-        HTMLAttributes: {
-          class: 'mention',
-        },
-        suggestion: mentionSuggestionOptions,
-      }),
-      Image.configure({
-        inline: true,
-      }),
-      Heading.configure({
-        levels: [1, 2, 3],
-      }),
-      Gapcursor,
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      CharacterCount.configure({
-        limit,
-      }),
-    ],
-    content: `
-
-    `,
+    extensions: getExtensions({ limit, handleUpload }),
   });
 
   const setLink = useCallback(() => {
@@ -122,21 +46,39 @@ export default function TipTap() {
     const previousUrl = editor.getAttributes('link').href;
     const url = window.prompt('URL', previousUrl);
 
-    // cancelled
     if (url === null) {
       return;
     }
 
-    // empty
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
 
       return;
     }
 
-    // update link
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setImage(file);
+    }
+  };
+
+  useEffect(() => {
+    async function handleImageUpload() {
+      if (image && editor) {
+        const src = await handleUpload(image);
+        editor.chain().focus()?.setImage({ src })?.run();
+      }
+    }
+    handleImageUpload();
+  }, [editor, handleUpload, image]);
 
   if (!editor) return null;
 
@@ -193,6 +135,14 @@ export default function TipTap() {
           </button>
           <button onClick={() => editor.chain().focus().setHardBreak().run()}>줄 바꿈</button>
           <button onClick={() => editor.chain().focus().setHorizontalRule().run()}>수평선 추가</button>
+          <button onClick={handleButtonClick}>이미지 추가</button>
+          <input
+            type='file'
+            accept='image/*'
+            ref={fileInputRef}
+            style={{ display: 'none' }} // 화면에 보이지 않도록 숨김
+            onChange={handleFileChange}
+          />
         </Box>
       </Box>
 
