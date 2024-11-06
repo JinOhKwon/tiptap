@@ -1,20 +1,12 @@
 import { Node, nodeInputRule } from '@tiptap/core';
 import { mergeAttributes, ReactNodeViewRenderer } from '@tiptap/react';
 
-import { UploadFn, uploadImagePlugin } from './uploadImage';
+import { uploadImagePlugin } from './uploadImage';
 import { Image } from '@/components/TiptapImage/Image';
+import { UploadFn } from '@/type';
 
 interface ImageOptions {
   inline: boolean;
-  HTMLAttributes: Record<string, unknown>;
-}
-
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    image: {
-      setImage: (options: { src: string; alt?: string; title?: string }) => ReturnType;
-    };
-  }
 }
 
 const IMAGE_INPUT_REGEX = /!\[(.+|:?)\]\((\S+)(?:(?:\s+)["'](\S+)["'])?\)/;

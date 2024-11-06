@@ -1,6 +1,5 @@
 import { Plugin } from 'prosemirror-state';
-
-export type UploadFn = (image: File) => Promise<string>;
+import { UploadFn } from '@/type';
 
 export const uploadImagePlugin = (upload: UploadFn) => {
   return new Plugin({
@@ -15,26 +14,15 @@ export const uploadImagePlugin = (upload: UploadFn) => {
           if (item.type.indexOf('image') === 0) {
             event.preventDefault();
 
-            if (upload && image) {
+            if (item.type.indexOf('image') === 0 && upload && image) {
+              event.preventDefault();
+
               upload(image).then((src) => {
-                const node = schema.nodes.image.create({
-                  src,
-                });
+                const node = schema.nodes.image.create({ src });
                 const transaction = view.state.tr.replaceSelectionWith(node);
                 view.dispatch(transaction);
               });
             }
-          } else {
-            const reader = new FileReader();
-            reader.onload = (readerEvent) => {
-              const node = schema.nodes.image.create({
-                src: readerEvent.target?.result,
-              });
-              const transaction = view.state.tr.replaceSelectionWith(node);
-              view.dispatch(transaction);
-            };
-            if (!image) return;
-            reader.readAsDataURL(image);
           }
         });
 
@@ -59,24 +47,15 @@ export const uploadImagePlugin = (upload: UploadFn) => {
           const { schema } = view.state;
           const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-          images.forEach(async (image) => {
-            const reader = new FileReader();
-
+          images.forEach((image) => {
             if (upload) {
-              const node = schema.nodes.image.create({
-                src: await upload(image),
+              upload(image).then((src) => {
+                const node = schema.nodes.image.create({ src });
+                if (coordinates) {
+                  const transaction = view.state.tr.insert(coordinates.pos, node);
+                  view.dispatch(transaction);
+                }
               });
-              const transaction = view.state.tr.insert(coordinates!.pos, node);
-              view.dispatch(transaction);
-            } else {
-              reader.onload = (readerEvent) => {
-                const node = schema.nodes.image.create({
-                  src: readerEvent!.target?.result,
-                });
-                const transaction = view.state.tr.insert(coordinates!.pos, node);
-                view.dispatch(transaction);
-              };
-              reader.readAsDataURL(image);
             }
           });
           return false;

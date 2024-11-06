@@ -2,8 +2,9 @@ import { EditorContent, FloatingMenu, useEditor } from '@tiptap/react';
 import { Box } from '@mui/material';
 import classnames from 'classnames/bind';
 import styles from './TipTap.module.scss';
-import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { getExtensions } from '@/components/TipTap/TiptapExtensios';
+import { upload } from '@/util/s3';
 
 const cx = classnames.bind(styles);
 
@@ -13,24 +14,8 @@ export default function TipTap() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [image, setImage] = useState<File | undefined>();
 
-  const readFileAsDataURL = (file: File): Promise<string> => {
-    return new Promise(function (resolve, reject) {
-      const fr = new FileReader();
-
-      fr.onload = function () {
-        resolve(fr.result as string);
-      };
-
-      fr.onerror = function () {
-        reject(fr);
-      };
-
-      fr.readAsDataURL(file);
-    });
-  };
-
   const handleUpload = useCallback(async (file: File) => {
-    const result = await readFileAsDataURL(file);
+    const result = await upload(file);
 
     return result;
   }, []);
@@ -140,7 +125,7 @@ export default function TipTap() {
             type='file'
             accept='image/*'
             ref={fileInputRef}
-            style={{ display: 'none' }} // 화면에 보이지 않도록 숨김
+            style={{ display: 'none' }}
             onChange={handleFileChange}
           />
         </Box>
